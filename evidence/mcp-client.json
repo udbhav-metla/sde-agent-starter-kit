@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "transport": "Streamable HTTP, JSON responses, stateless",
+  "sdk": "mcp 1.30.0",
+  "connect_and_reconnect": [
+    {
+      "protocol": "2025-11-25",
+      "tools": 7,
+      "get_issue": "passed",
+      "provenance_search": "passed",
+      "path_escape": "rejected"
+    },
+    {
+      "protocol": "2025-11-25",
+      "tools": 7,
+      "get_issue": "passed",
+      "provenance_search": "passed",
+      "path_escape": "rejected"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sde-agent-starter-kit"
+version = "0.1.0"
+description = "A permission-aware issue investigation and verified change console"
+requires-python = ">=3.12"
+dependencies = ["fastapi==0.153.0", "uvicorn==0.54.0", "mcp==1.30.0", "boto3==1.43.115", "httpx==0.28.1", "python-dotenv==1.2.4"]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1"]
+
+[project.scripts]
+sde-agent = "sde_agent.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["sde_agent*"]
+
+[tool.setuptools.package-data]
+sde_agent = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
