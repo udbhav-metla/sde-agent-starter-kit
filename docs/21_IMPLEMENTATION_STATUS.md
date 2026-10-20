@@ -12,6 +12,8 @@ depends_on: ["00_START_HERE.md", "19_DECISIONS_AND_ASSUMPTIONS.md"]
 
 Repository update: the owner requested a new repository after access to the original target could not be established. The organized implementation is now targeted at `udbhav-metla/sde-agent-starter-kit`. The original target and access checks below remain historical records, not the active publication destination.
 
+Publication verification: the build is on the new repository's `main` branch. The hosted [Verify workflow run](https://github.com/udbhav-metla/sde-agent-starter-kit/actions/runs/39458367247) passed for commit `b52dd53ecf9456cc5a5cc78698b5937ecfc90a96`. Repository publication uses the connected GitHub integration; it is separate from verification of the application's own GitHub adapter.
+
 This file records the built release separately from the original pre-build specifications, which remain unchanged. Read the root README for startup and exact limitations. A local MVP has been implemented; the full hackathon submission is not yet verified.
 
 Verification on 20 October 2026: 32 tests passed (one dependency deprecation warning), official MCP SDK interoperability and reconnect passed using protocol 2025-11-25, browser workflow passed on desktop and mobile, Python compilation passed, and the distributable wheel built successfully. Reports and captured screenshots are under `evidence/`. These are local checks, not evidence of a live AWS call, hosted CI run, actual GitHub PR, or event qualification.

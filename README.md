@@ -1,30 +1,53 @@
 # SDE Agent Starter Kit
 
-Repository: [udbhav-metla/sde-agent-starter-kit](https://github.com/udbhav-metla/sde-agent-starter-kit).
+**From issue to reviewed change, with every action and result accounted for.**
 
-A local engineering console that keeps an issue, retrieved source, proposed diff, exact-action approvals, test evidence, and draft PR in one persistent record.
+[![Verify workflow](https://github.com/udbhav-metla/sde-agent-starter-kit/actions/workflows/checks.yml/badge.svg)](https://github.com/udbhav-metla/sde-agent-starter-kit/actions/workflows/checks.yml)
 
-This implementation follows the supplied numbered specifications. The original documents are preserved in `docs/`; implementation decisions and remaining release gates are recorded in `docs/21_IMPLEMENTATION_STATUS.md`. The source folder supplied by the user contained documentation only. This build is a separate, runnable deliverable.
+SDE Agent is a local engineering workflow console. It brings issue context, a proposed plan, an exact diff, human approvals, test output, and delivery evidence into one persistent record. The model proposes work; deterministic backend policy controls execution.
 
-## Repository layout
+[Quick start](#quick-start) · [Demo](#try-the-demo) · [Architecture](#architecture) · [Integrations](#live-integrations) · [Documentation](#documentation)
 
-```text
-sde_agent/         Backend, policy engine, providers, persistence, executor
-  web/             Browser dashboard, styles, and static assets
-tests/             Workflow, security, and provider-contract tests
-docs/              Original specifications, decisions, and HTTP schema
-skills/            Reusable MCP investigation skill
-infra/             Example least-privilege cloud configuration
-scripts/           MCP and browser verification entry points
-evidence/          Redacted local verification reports and screenshots
-.github/workflows/ Hosted test workflow
+![SDE Agent desktop overview showing investigations, run states, and tool connections](evidence/overview.png)
+
+## What it does
+
+- **Investigates an issue:** collects scoped GitHub issue data, Python files, and CI check metadata at a pinned commit.
+- **Proposes a bounded change:** shows the plan, acceptance criteria, affected files, and complete proposed diff.
+- **Pauses for exact-action approval:** binds each decision to its payload, repository, actor, digest, and expiry.
+- **Records actual verification:** presents before/after stdout, stderr, exit codes, test counts, and duration.
+- **Prepares delivery:** requests separate approval for a new branch and draft PR containing the tested patch.
+- **Keeps an audit trail:** persists runs, source references, decisions, outcomes, and a hash-linked timeline.
+- **Exposes MCP tools:** provides seven typed capabilities through the official SDK's Streamable HTTP transport.
+
+### Current status
+
+This is a runnable local MVP. An implemented adapter is distinguished from a verified live integration.
+
+| Capability | Status |
+|---|---|
+| Dashboard, plans, approvals, history, and evidence | Implemented; desktop/mobile browser workflow checked |
+| Included demonstration | Synthetic issue and deterministic plan; actual regression tests executed |
+| Server-side policy and approval lifecycle | Denial, expiry, stale parameters, cancellation, and replay tested |
+| MCP transport | Official SDK initialization, discovery, calls, and reconnect verified |
+| GitHub issue/context and draft-PR adapters | Implemented; live application path requires scoped credentials |
+| Amazon Bedrock Converse planner | Implemented; mocked provider contract tested; live AWS call pending |
+| Docker executor for external code | Implemented; real container isolation not verified in the build environment |
+| Alexa+ | Labelled text simulation; no live Alexa connection |
+| Upstream open-source contribution | Not yet supplied |
+
+**Recorded checks:** 32 automated tests passed, plus MCP SDK interoperability, desktop/mobile browser checks, Python compilation, and wheel build. Inspect the [captured evidence](evidence/README.md); the badge above reports the current hosted workflow result.
+
+## Quick start
+
+**Requires Python 3.12.** The included demo needs no GitHub token, AWS account, or Docker after dependencies are installed.
+
+```bash
+git clone https://github.com/udbhav-metla/sde-agent-starter-kit.git
+cd sde-agent-starter-kit
 ```
 
-Use [the documentation map](docs/README.md) to navigate the specifications and [the evidence index](evidence/README.md) to inspect recorded checks. Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing policy or integration behavior.
-
-## Run locally
-
-Requires Python 3.12. The included demonstration needs no account, model key, Docker, or network access after dependencies are installed.
+### Windows PowerShell
 
 ```powershell
 python -m venv .venv
@@ -32,64 +55,160 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m sde_agent
 ```
 
-On macOS/Linux, use `.venv/bin/python` instead. Dependencies are pinned; the lock includes the Windows-only package marker. Startup binds to `127.0.0.1:8000` and prints a private login link. Open it in your browser. Keep it private: its fragment contains the single local operator token. The browser stores that token in session storage and removes it from the address bar. The service has no shared-hosting or multi-user claim.
+### macOS or Linux
 
-Choose **Try the included demo → Build a plan → Approve action**. Review the baseline failure and the three actual passing regression tests after the patch. Start a second run and choose **Deny** to show that execution stops. **Plan only** never creates an execution approval or workspace.
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.lock
+.venv/bin/python -m sde_agent
+```
 
-The fixture issue and deterministic plan are explicitly labelled synthetic. Its Python subprocess runs only the shipped, exact fixture and patch. Any external repository code requires the Docker executor. No untrusted code runs through a host-shell fallback.
+Open the private login link printed in your terminal. The service listens on **`http://127.0.0.1:8000`**. Its link fragment contains the local operator token; keep that link out of public screenshots and logs. The browser stores the token for its session and removes it from the address bar.
 
-## Connect GitHub and Amazon Bedrock
+Use `python -m sde_agent --port 8080` with your virtual environment's Python for a different port. Stop the service with **Ctrl+C**.
 
-Copy `.env.example` to `.env` and configure the exact repository allowlist, GitHub fine-grained token, region, and a Bedrock model you can access. Use the AWS SDK credential chain or your local AWS profile; do not add credentials to source. Restart after configuration changes.
+## Try the demo
 
-1. Create an investigation with a matching `https://github.com/owner/repo/issues/number` URL. Source and CI are read at a pinned commit from the repository's default branch.
-2. Inspect collected files. Approve the exact Bedrock request before code is sent to AWS or inference is billed. Output is bounded to 4,096 tokens and one request per approval, with no automatic provider retry. The app does not estimate prices; set an account budget before enabling this path.
-3. Inspect the model-generated plan, acceptance criteria, and complete proposed diff. push thisModel output cannot choose commands or grant permissions.
-4. Install Docker Desktop/Engine and pre-pull the sandbox image: `docker pull python:3.12-slim`. For a shared or sensitive environment configure an audited image digest in `SDE_SANDBOX_IMAGE`. The executor never pulls an image implicitly.
-5. Approve the patch/test action. The exact patch is applied to an ephemeral copy and the fixed unittest command runs before and after, without network, credentials, root privileges, or host Docker socket inside the container. Limits: 256 MB, one CPU, 32 PIDs, 45 seconds per check, 1 MB output kill threshold, 64 KB retained per stream. Counts come from actual unittest output; no tests means no successful verification.
-6. After tests pass, enable `SDE_GITHUB_WRITE=true` only if the configured token has the required rights. **Review draft PR action** displays the exact branch, base commit, title, body, and tested patch. A separate approval creates Git objects, a new branch, and a draft PR. The app never merges.
+1. Select **Try the included demo** on the overview.
+2. Keep **Plan and prepare a change** selected, then choose **Build a plan**.
+3. Inspect the synthetic issue, source, acceptance criteria, proposed diff, and exact action payload.
+4. Choose **Approve action**. The original empty-input handler fails a regression test; the patched version passes all three fixture tests.
+5. Compare the recorded output and inspect the timeline.
+6. Start another run and choose **Deny** to show that the protected action does not execute.
 
-Current live scope: small Python standard-library projects with unittest discovery, at most 40 non-hidden `.py` files and 300 KB retrieved source. Dependency installation, arbitrary build commands, other languages, cloning entire repositories, test-file modification, and automatic issue selection are not implemented. Repositories that need additional files or packages will not verify with this executor. The dashboard displays failures honestly.
+Choose **Plan only** to inspect a plan without modifying code or running tests. The fixture has no remote repository, so the UI does not invent a pull-request URL.
 
-GitHub permissions: Metadata read; Issues read; Checks read; Contents read. To publish, add Contents write and Pull requests write for only the disposable target. Bedrock IAM needs `bedrock:InvokeModel` on the selected model/inference profile and any required underlying model resources. See `infra/bedrock-policy.example.json` and adapt exact ARNs to your account. No cloud resources are provisioned by this project.
+<details>
+<summary>Approval and verification screenshots</summary>
+
+![Exact-action approval showing the target, expiry, digest, plan, and proposed diff](evidence/approval.png)
+
+![Actual verification output showing the baseline failure and three passing tests after the patch](evidence/verification.png)
+
+</details>
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[Web console] --> API[FastAPI service]
+    MCP[MCP client] --> HTTP[Streamable HTTP tools]
+    HTTP --> API
+    API --> Context[Scoped issue and source context]
+    Context --> Plan[Fixture or Bedrock planner]
+    Plan --> Policy[Policy and exact-action approval]
+    Policy --> Exec[Disposable executor]
+    Exec --> Tests[Test output and diff]
+    Tests --> Delivery[Separately approved draft PR]
+    API --> Store[(SQLite runs and audit events)]
+    Context --> GitHub[GitHub adapter]
+    Delivery --> GitHub
+```
+
+The dashboard is JavaScript and CSS served by the backend. FastAPI and Pydantic define the HTTP contract; SQLite WAL persists local records; two bounded worker threads handle active operations. The official MCP Python SDK provides the tool transport. Bedrock is an optional planning adapter.
+
+## Live integrations
+
+Copy [`.env.example`](.env.example) to `.env`, configure the values locally, and restart. Never commit credentials.
+
+| Setting | Purpose |
+|---|---|
+| `SDE_ALLOWED_REPOS` | Exact, comma-separated `owner/repository` allowlist |
+| `GITHUB_TOKEN` | Fine-grained token scoped to a disposable target repository |
+| `SDE_GITHUB_WRITE` | Defaults to `false`; enable when draft-PR publication is needed |
+| `AWS_REGION` / `BEDROCK_MODEL_ID` | Explicit region and accessible model or inference profile |
+| `SDE_SANDBOX_IMAGE` | Pre-pulled Docker image; use an audited digest for sensitive environments |
+| `SDE_API_TOKEN` | Optional fixed local operator token; otherwise generated at startup |
+| `SDE_DATA_DIR` | Local data directory; defaults to `.data` |
+
+The live flow retrieves an allowed issue, requests approval before sending context to Bedrock, shows a proposed patch, requests approval for preparation and tests, and finally requests separate approval for a draft PR. Model output cannot choose commands or grant permissions.
+
+GitHub reads need Metadata, Issues, Checks, and Contents read access. Publication additionally needs Contents and Pull requests write access. AWS uses the standard boto3 credential chain; adapt the [example IAM policy](infra/bedrock-policy.example.json) to the selected model and region.
+
+No cloud resources are provisioned. Bedrock makes one bounded request per approval without an automatic provider retry. Set an account budget before enabling it. See the [operations guide](docs/OPERATIONS.md) for permissions, limits, setup, and recovery.
 
 ## MCP and Agent Skill
 
-Endpoint: `http://127.0.0.1:8000/mcp/` using Streamable HTTP. Authenticate using `Authorization: Bearer <operator token>`. Use `Accept: application/json, text/event-stream`. MCP SDK 1.30.0 handles initialization, protocol negotiation, schema validation, notifications, and errors. Transport is stateless with JSON responses; reconnect by initializing a fresh client. It does not offer SSE replay or durable transport sessions.
+**Endpoint:** `http://127.0.0.1:8000/mcp/`  
+**Authentication:** `Authorization: Bearer <local operator token>`  
+**Transport:** Streamable HTTP, stateless, JSON responses; MCP SDK 1.30.0 handles protocol negotiation.
 
-The seven tools are `get_issue`, `search_repository`, `read_file`, `get_ci_status`, `propose_change`, `run_tests`, and `create_draft_pull_request`. Run-oriented tools require a dashboard-created run ID. Read tools only access bounded retrieved context. `propose_change` exposes the plan; `run_tests` returns actual execution evidence; neither bypasses visual approval. Draft PR requests create approvals rather than publishing immediately. Unsupported notification and generic AWS-status tools are not advertised.
+| Tool | Purpose |
+|---|---|
+| `get_issue` | Read retrieved issue context and source identity |
+| `search_repository` | Search pinned source with file and line locators |
+| `read_file` | Read an already retrieved file, never an arbitrary host path |
+| `get_ci_status` | Inspect retrieved CI check metadata |
+| `propose_change` | Inspect the plan, diff, and approval state |
+| `run_tests` | Read actual test evidence; cannot launch arbitrary commands |
+| `create_draft_pull_request` | Prepare a remote-write approval rather than publish immediately |
 
-The reusable skill is `skills/investigate-fix/SKILL.md`. Install that directory into your coding agent's skill directory and configure the MCP endpoint using your client's remote-HTTP configuration. A usable skill artifact is included; execution inside a separate agent ecosystem has not been verified.
+Create a run through the dashboard first, then use its run ID. Protected actions require dashboard review; there is no MCP approval-decision tool. The [investigation skill](skills/investigate-fix/SKILL.md) describes the reusable workflow. Invocation in a separate skill-host ecosystem has not yet been verified.
 
-```powershell
-$env:SDE_API_TOKEN = "your-running-service-token"
-python scripts/verify_mcp.py
-```
+## Security boundaries
 
-This script uses the official MCP client SDK to initialize twice, discover tools, retrieve a synthetic issue and source provenance, reject a path escape, and reconnect. It prints real results without printing the token. Use `SDE_BASE_URL` for a non-default local port.
+- External issue text, code, logs, and model output are untrusted data. Authorization is enforced server-side.
+- Approvals expire after ten minutes, bind to exact parameters, and are consumed once.
+- Unknown tools, invalid schemas, unsafe paths, foreign hosts/origins, and out-of-scope repositories are rejected.
+- External code has no host-shell fallback. Docker runs without network, mounted credentials, root privileges, or a host Docker socket inside the container.
+- Execution uses a fixed unittest command, read-only filesystem, 256 MB memory, one CPU, 32 PIDs, and 45 seconds per check.
+- Nonzero exits and zero discovered tests cannot produce successful verification.
+- Configured secrets and recognized secret patterns are redacted. Filtering is heuristic; use non-sensitive disposable repositories.
+- Audit records have append-only SQL triggers and a hash chain, without an externally anchored tamper-proof guarantee.
 
-## API, tests, and operations
+## Testing
 
-All `/api/*`, `/mcp/*`, and OpenAPI documentation routes require the token. `/health` is a minimal public liveness check; `/api/ready` checks database availability and audit-chain integrity. OpenAPI at `/openapi.json` is the authoritative typed HTTP contract. API responses use `{request_id,status,data,error}`; MCP uses protocol-native envelopes. Unknown JSON fields are rejected.
+From an activated virtual environment:
 
-```powershell
+```bash
 python -m pytest -q
 ```
 
-See `evidence/` for captured verification reports and screenshots. Tests cover actual fixture execution plus authorization and abuse scenarios; they do not imply live account, Docker-isolation, or hackathon eligibility verification. CI configuration is included but a hosted CI run has not been observed.
+Tests cover the fixture workflow, plan-only mode, approval denial/expiry/replay, stale payloads, cancellation, authentication, path traversal, secret canaries, timeout termination, zero-test discovery, and mocked provider contracts.
 
-The current build passed **32 automated tests**, the official MCP SDK client check including reconnect, and the browser workflow at 1440×1000 and 390×844. A wheel build also passed. `BUILD_MANIFEST.json` records source hashes and external gates; this source snapshot is not pinned to an upstream Git commit.
+With the service running and `SDE_API_TOKEN` set locally:
 
-For the optional browser check, run the server separately, install the development browser dependency with `npm install` and `npx playwright install chromium`, set `SDE_API_TOKEN` and optional `SDE_BASE_URL`, then run `npm run test:browser`. It exercises the demo and writes screenshots under `evidence/`. `SDE_BROWSER_PATH` optionally selects a local Chrome/Edge executable. This package.json is only for browser checks; the application itself needs no Node runtime.
+```bash
+python scripts/verify_mcp.py
+```
 
-Records use SQLite WAL under `.data/`, with append-only event triggers and a SHA-256 audit chain. The chain detects edits when the database remains under application control; a host administrator can rewrite the entire database, so this is not an externally anchored tamper-proof log. Source context and evidence are redacted before persistence, model requests, and display; heuristic filtering cannot guarantee detection of every unknown secret. Use disposable, non-sensitive repositories for the demo.
+Use `SDE_BASE_URL` for another local port. For optional browser checks, run `npm install`, `npx playwright install chromium`, and `npm run test:browser` against the running service. The browser check writes screenshots under `evidence/`.
 
-The server caps concurrent active operations at two, limits authenticated requests to 360/minute, rejects bodies over 128 KB, denies foreign hosts/origins, and never exposes arbitrary shell commands. Approval decisions are consumed under a process lock. Run only one service process against a data directory. Remote writes are never automatically retried; after an interrupted or failed publication, the run is marked partial and must be reconciled against GitHub. Git objects or a branch may exist if PR creation failed.
+## Repository layout
 
-Stop with Ctrl+C. To reset, stop the service, preserve any needed evidence, and remove only this project's `.data` directory (or the exact configured `SDE_DATA_DIR`). Local records are retained until that explicit reset; there is no automatic expiry/deletion scheduler. For demos, reset immediately after exporting required non-sensitive evidence. On restart, interrupted active runs become partial rather than silently resuming. Revoke leaked tokens and rotate the local operator token before restarting.
+```text
+.github/workflows/       Hosted automated test workflow
+sde_agent/               Backend, orchestration, policy, integrations, storage
+  web/                   Dashboard HTML, JavaScript, CSS, and assets
+tests/                   Workflow, security, and provider-contract tests
+docs/                    Original specifications, status, API schema, operations
+skills/investigate-fix/  Reusable MCP investigation skill
+infra/                   Example least-privilege AWS configuration
+scripts/                 MCP client and browser verification entry points
+evidence/                Captured reports and screenshots
+```
 
-## Remaining submission gates
+## Documentation
 
-The application includes GitHub and Bedrock adapters, but real AWS and draft-PR calls require your configured account and repository and have not been verified in this build session. Docker was not installed in the build environment. Alexa+ is a clearly labelled text simulation. No open-source contribution was published, and event eligibility has not been confirmed. These gates remain visible rather than being represented as completed features.
+| Guide | Contents |
+|---|---|
+| [Documentation map](docs/README.md) | Index of the supplied specifications and implementation guides |
+| [Implementation status](docs/21_IMPLEMENTATION_STATUS.md) | Decisions, coverage, and remaining release gates |
+| [Operations](docs/OPERATIONS.md) | Detailed setup, permissions, limits, reset, and failure recovery |
+| [HTTP contract](docs/api.openapi.json) | Exported OpenAPI schema; live schema is at authenticated `/openapi.json` |
+| [Evidence](evidence/README.md) | Test reports, MCP results, and screenshots |
+| [Contributing](CONTRIBUTING.md) | Contribution scope, security expectations, and validation |
 
-Implementation references: [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk), [Bedrock Converse](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html), [GitHub Git trees](https://docs.github.com/en/rest/git/trees), and [GitHub draft pull requests](https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request).
+## Current limits
+
+This release is a **single-user local service**, with one process per data directory. Multi-user hosting needs additional identity and role controls. Live execution supports small Python standard-library projects with unittest discovery: at most 40 supported source/test files and 300 KB retrieved source. Dependency installation, arbitrary commands, other languages, and test-file changes are unsupported.
+
+Live application GitHub calls, Bedrock calls, and Docker isolation still need verification in the owner's setup. Tests passing do not prove every acceptance criterion. Interrupted remote writes are marked partial and must be reconciled against GitHub before retrying. Local records remain until an explicit reset; stop the service and remove only its configured data directory after exporting needed evidence.
+
+Merges, deployments, sent stakeholder messages, live Alexa access, and an upstream contribution are outside the implemented release. Publishing this repository alone does not satisfy the upstream contribution requirement.
+
+## License and attribution
+
+The owner has not selected a project license. This repository does not currently grant an open-source license. Third-party dependencies retain their own licenses.
+
+Implementation references: [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk), [Amazon Bedrock Converse](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html), and [GitHub REST API](https://docs.github.com/en/rest).

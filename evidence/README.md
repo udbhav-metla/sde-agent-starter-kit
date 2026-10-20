@@ -2,6 +2,8 @@
 
 These artifacts were captured during local verification on 20 October 2026. They do not demonstrate live AWS access, a published GitHub draft PR, Docker isolation, a hosted CI run, or a completed upstream contribution.
 
+After publication, the [hosted GitHub Actions workflow](https://github.com/udbhav-metla/sde-agent-starter-kit/actions/runs/39458367247) completed successfully for commit `b52dd53ecf9456cc5a5cc78698b5937ecfc90a96`. Its separate result is recorded in [github-actions.json](github-actions.json).
+
 | Artifact | What it records |
 |---|---|
 | [tests.txt](tests.txt) | 32 automated tests passed, with one dependency deprecation warning |

@@ -7,6 +7,7 @@ The numbered specification files preserve the supplied project documentation. Im
 | [Project README](../README.md) | Install, run, configure, and understand current limits |
 | [Implementation status](21_IMPLEMENTATION_STATUS.md) | Decisions, requirement coverage, verified behavior, and remaining gates |
 | [HTTP contract](api.openapi.json) | Exported FastAPI OpenAPI schema |
+| [Operations guide](OPERATIONS.md) | Detailed integration setup, permissions, execution limits, and recovery |
 | [Evidence index](../evidence/README.md) | Captured tests, transport checks, and screenshots |
 | [Agent Skill](../skills/investigate-fix/SKILL.md) | Safe MCP investigation workflow |
 
